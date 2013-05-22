@@ -13,6 +13,7 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 
 /**
  * db初始化类
+ * 初始化该类即可获取数据库连接
  * 
  * @author talkliu
  * 
