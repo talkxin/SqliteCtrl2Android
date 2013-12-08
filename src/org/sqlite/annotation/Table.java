@@ -1,4 +1,4 @@
-package com.sqliteCtrl.Annotation;
+package org.sqlite.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,18 +6,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 属性注解 注解该属性是否被映射进表
+ * 类注解，声明主键
  * 
  * @author talkliu
  * 
  */
-@Target({ ElementType.FIELD })
+@Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TableProperty {
+public @interface Table {
 	/**
-	 * 是否会被映射入结果集
+	 * 主键名
 	 * 
 	 * @return
 	 */
-	boolean toObject() default true;
+	String kyeName() default "";
 }

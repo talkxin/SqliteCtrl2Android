@@ -1,4 +1,4 @@
-package com.sqliteCtrl.util;
+package org.sqlite.util;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,35 +12,36 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 
 /**
- * db初始化类
- * 初始化该类即可获取数据库连接
+ * db初始化类 初始化该类即可获取数据库连接
  * 
  * @author talkliu
  * 
  */
 public class DataBase extends SQLiteOpenHelper {
-	private static final int VERSION = 1;
+	public static final int VERSION = 1;
 	private List<String> updateDatabasesList;
 	private Context context;
 	private Integer xml = null;
 	private String xmlString = null;
+	private boolean isonCreate = false;
 
 	public DataBase(Context context, String name, CursorFactory factory,
-			int version) {
+			int version,boolean isonCreate) {
 		super(context, name, factory, version);
+		this.isonCreate = isonCreate;
 		this.context = context;
 		// TODO Auto-generated constructor stub
 	}
 
-	public DataBase(Context context, String name, int version) {
-		this(context, name, null, version);
+	public DataBase(Context context, String name, int version,boolean isonCreate) {
+		this(context, name, null, version,isonCreate);
 		this.context = context;
 	}
 
-	public DataBase(Context context, Integer database)
+	public DataBase(Context context, Integer database,boolean isonCreate)
 			throws XmlPullParserException, IOException {
 		this(context, new Xml2Data(context, database).getDatabaseName(),
-				VERSION);
+				VERSION,isonCreate);
 		this.context = context;
 		xml = database;
 	}
@@ -49,19 +50,24 @@ public class DataBase extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		// TODO Auto-generated method stub
 		// 表结构初始化'
-		try {
-			for (String sql : new Xml2Data(context, xml).getCreateSql()) {
-				db.execSQL(sql);
+		if (isonCreate) {
+			try {
+				for (String sql : new Xml2Data(context, xml).getCreateSql()) {
+					db.execSQL(sql);
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (XmlPullParserException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (XmlPullParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 
