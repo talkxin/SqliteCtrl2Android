@@ -137,6 +137,15 @@ public class DatabaseCtrl {
 	}
 
 	/**
+	 * 获取数据库连接直接操作SQLiteDatabase对象
+	 * 
+	 * @return
+	 */
+	public SQLiteDatabase getSqLiteDatabase() {
+		return sDatabase;
+	}
+
+	/**
 	 * 插入数据
 	 * 
 	 * @param object
