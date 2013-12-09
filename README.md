@@ -13,12 +13,10 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
   2、head标签（数据库标签，在oncreate时会自动创建该数据库，在当前版本下只支持一个数据库的创建）
     name属性为数据库名称
     
-  <head name="Database Name" />
+
   3、table标签，对应表名与注解的ORM类，在oncreate时会根据类注解生成表的列
   
-      <table
-        name="Table Name"
-        ref="Your Table's Class" />
+
 三、类注解与属性注解
   1、类注解：注解主键名称，oncreate时会根据该字段生成主键约束，操作时会根据该名称检查主键约束，可以不填
  	/**
