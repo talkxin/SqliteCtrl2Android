@@ -6,7 +6,7 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
 一、xml文件的创建
   1、在res文件夹下创建xml文件夹
   2、创建database.xml文件
-  
+   
 二、xml文件的内容
   1、根标签
   <database>
