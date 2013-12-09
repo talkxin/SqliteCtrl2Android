@@ -21,6 +21,7 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
         name="Table Name"
         ref="Your Table's Class" />
 
+
 三、类注解与属性注解
   1、类注解：注解主键名称，oncreate时会根据该字段生成主键约束，操作时会根据该名称检查主键约束，可以不填
  	/**
