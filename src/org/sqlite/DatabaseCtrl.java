@@ -180,6 +180,8 @@ public class DatabaseCtrl {
 	public <T> int update2Id(T object) throws IllegalArgumentException,
 			IllegalAccessException {
 		TableType tableType = getObjectContentValues(false, object);
+		if (tableType.tableKey == null || tableType.tableKey.equals(""))
+			return 0;
 		return sDatabase.update(ClassForTabelName.get(object.getClass()
 				.getName()), tableType.values, tableType.tableKey + "=?",
 				new String[] { String.valueOf(tableType.values
@@ -207,21 +209,17 @@ public class DatabaseCtrl {
 	 * 根据主键删除
 	 * 
 	 * @param object
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
 	 */
-	public <T> int delete2Id(T object) {
-		try {
-			TableType tableType = getObjectContentValues(false, object);
-			return sDatabase.delete(tableType.tableKey, tableType.tableKey
-					+ "=?", new String[] { String.valueOf(tableType.values
-					.get(tableType.tableKey)) });
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return 0;
+	public <T> int delete2Id(T object) throws IllegalArgumentException,
+			IllegalAccessException {
+		TableType tableType = getObjectContentValues(false, object);
+		if (tableType.tableKey == null || tableType.tableKey.equals(""))
+			return 0;
+		return sDatabase.delete(tableType.tableKey, tableType.tableKey + "=?",
+				new String[] { String.valueOf(tableType.values
+						.get(tableType.tableKey)) });
 	}
 
 	/**
@@ -247,6 +245,8 @@ public class DatabaseCtrl {
 	 */
 	public <T> T query2Id(T object) throws Exception {
 		TableType tableType = getObjectContentValues(false, object);
+		if (tableType.tableKey == null || tableType.tableKey.equals(""))
+			return null;
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(object.getClass().getName())
 				+ " where " + tableType.tableKey + "=?";
@@ -375,7 +375,10 @@ public class DatabaseCtrl {
 		// 返回类注解
 		Table table = (Table) cla
 				.getAnnotation(org.sqlite.annotation.Table.class);
-		tableType.tableKey = table.kyeName();
+		if (table != null && table.kyeName() != null)
+			tableType.tableKey = table.kyeName();
+		else
+			tableType.tableKey = "";
 		// 返回cla的所有内容
 		Field[] allFields = cla.getDeclaredFields();
 		// 创建一个结果集

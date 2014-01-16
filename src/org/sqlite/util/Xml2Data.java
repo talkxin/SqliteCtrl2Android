@@ -120,7 +120,7 @@ public class Xml2Data {
 						} else {
 							createSql.append(t.type + "(" + t.length + ") ");
 						}
-						if (t.name.equals(key)) {
+						if (!key.equals("") && t.name.equals(key)) {
 							// 如果为主键则加上主键约束
 							createSql.append("primary key ");
 						}
@@ -196,7 +196,10 @@ public class Xml2Data {
 	private <T> String getTableKye(Class<T> cla) {
 		Table table = (Table) cla
 				.getAnnotation(org.sqlite.annotation.Table.class);
-		return table.kyeName();
-	}
+		if (table != null)
+			return table.kyeName();
+		else
+			return "";
 
+	}
 }
