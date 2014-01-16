@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.Table;
-import org.sqlite.module.TableValue;
 import org.sqlite.util.DataBase;
 import org.sqlite.util.Xml2Data;
 import org.xmlpull.v1.XmlPullParserException;
@@ -149,19 +148,14 @@ public class DatabaseCtrl {
 	 * 插入数据
 	 * 
 	 * @param object
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
 	 */
-	public <T> void insert(T object) {
-		try {
-			sDatabase.insert(
-					ClassForTabelName.get(object.getClass().getName()), null,
-					getObjectContentValues(true, object).values);
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public <T> long insert(T object) throws IllegalArgumentException,
+			IllegalAccessException {
+		return sDatabase.insert(
+				ClassForTabelName.get(object.getClass().getName()), null,
+				getObjectContentValues(true, object).values);
 	}
 
 	/**
@@ -172,30 +166,24 @@ public class DatabaseCtrl {
 	 * @param values
 	 *            ContentValues的使用方法与map相同
 	 */
-	public void insert(String tableName, ContentValues values) {
-		sDatabase.insert(tableName, null, values);
+	public long insert(String tableName, ContentValues values) throws Exception {
+		return sDatabase.insert(tableName, null, values);
 	}
 
 	/**
 	 * 根据主键修改对象内所有对应列
 	 * 
 	 * @param objext
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
 	 */
-	public <T> void update2Id(T object) {
-		try {
-			TableType tableType = getObjectContentValues(false, object);
-			sDatabase.update(
-					ClassForTabelName.get(object.getClass().getName()),
-					tableType.values, tableType.tableKey + "=?",
-					new String[] { String.valueOf(tableType.values
-							.get(tableType.tableKey)) });
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public <T> int update2Id(T object) throws IllegalArgumentException,
+			IllegalAccessException {
+		TableType tableType = getObjectContentValues(false, object);
+		return sDatabase.update(ClassForTabelName.get(object.getClass()
+				.getName()), tableType.values, tableType.tableKey + "=?",
+				new String[] { String.valueOf(tableType.values
+						.get(tableType.tableKey)) });
 	}
 
 	/**
@@ -210,9 +198,9 @@ public class DatabaseCtrl {
 	 * @param whereArgs
 	 *            条件值，可以根据条件进行无限跟参
 	 */
-	public void update2Where(String table, ContentValues values,
+	public int update2Where(String table, ContentValues values,
 			String whereClause, String... whereArgs) {
-		sDatabase.update(table, values, whereClause, whereArgs);
+		return sDatabase.update(table, values, whereClause, whereArgs);
 	}
 
 	/**
@@ -220,12 +208,12 @@ public class DatabaseCtrl {
 	 * 
 	 * @param object
 	 */
-	public <T> void delete2Id(T object) {
+	public <T> int delete2Id(T object) {
 		try {
 			TableType tableType = getObjectContentValues(false, object);
-			sDatabase.delete(tableType.tableKey, tableType.tableKey + "=?",
-					new String[] { String.valueOf(tableType.values
-							.get(tableType.tableKey)) });
+			return sDatabase.delete(tableType.tableKey, tableType.tableKey
+					+ "=?", new String[] { String.valueOf(tableType.values
+					.get(tableType.tableKey)) });
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -233,6 +221,7 @@ public class DatabaseCtrl {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return 0;
 	}
 
 	/**
@@ -245,9 +234,9 @@ public class DatabaseCtrl {
 	 * @param whereArgs
 	 *            条件值，可以根据条件进行无限跟参
 	 */
-	public void delete2Where(String table, String whereClause,
-			String... whereArgs) {
-		sDatabase.delete(table, whereClause, whereArgs);
+	public int delete2Where(String table, String whereClause,
+			String... whereArgs) throws Exception {
+		return sDatabase.delete(table, whereClause, whereArgs);
 	}
 
 	/**
@@ -256,39 +245,15 @@ public class DatabaseCtrl {
 	 * @param object
 	 * @return
 	 */
-	public <T> T query2Id(T object) {
-		try {
-			TableType tableType = getObjectContentValues(false, object);
-			String sqlString = "select * from "
-					+ ClassForTabelName.get(object.getClass().getName())
-					+ " where " + tableType.tableKey + "=?";
-			Cursor cursor = sDatabase.rawQuery(sqlString, new String[] { String
-					.valueOf(tableType.values.get(tableType.tableKey)) });
-			List<T> list = outObjectList(cursor, object.getClass());
-			return list.size() != 0 ? list.get(0) : null;
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+	public <T> T query2Id(T object) throws Exception {
+		TableType tableType = getObjectContentValues(false, object);
+		String sqlString = "select * from "
+				+ ClassForTabelName.get(object.getClass().getName())
+				+ " where " + tableType.tableKey + "=?";
+		Cursor cursor = sDatabase.rawQuery(sqlString, new String[] { String
+				.valueOf(tableType.values.get(tableType.tableKey)) });
+		List<T> list = outObjectList(cursor, object.getClass());
+		return list.size() != 0 ? list.get(0) : null;
 	}
 
 	/**
@@ -302,35 +267,12 @@ public class DatabaseCtrl {
 	 *            sql参数可根据语句无限跟参
 	 * @return
 	 */
-	public <T> T query2Where(Class cla, String sql, String... selectionArgs) {
+	public <T> T query2Where(Class cla, String sql, String... selectionArgs)
+			throws Exception {
 		Cursor cursor = sDatabase.rawQuery(sql, selectionArgs);
 		List<T> list;
-		try {
-			list = outObjectList(cursor, cla);
-			return list.size() != 0 ? list.get(0) : null;
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		list = outObjectList(cursor, cla);
+		return list.size() != 0 ? list.get(0) : null;
 	}
 
 	/**
@@ -341,35 +283,11 @@ public class DatabaseCtrl {
 	 * @param object
 	 * @return
 	 */
-	public <T> List<T> queryAllObject(Class cla) {
+	public <T> List<T> queryAllObject(Class cla) throws Exception {
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName());
 		Cursor cursor = sDatabase.rawQuery(sqlString, null);
-		try {
-			return outObjectList(cursor, cla);
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		return outObjectList(cursor, cla);
 	}
 
 	/**
@@ -391,36 +309,13 @@ public class DatabaseCtrl {
 	 * @throws Exception
 	 */
 	public <T> List<T> queryAllObjectForLimit(Class cla, int start,
-			int pageNum, String where, String... selectionArgs) {
+			int pageNum, String where, String... selectionArgs)
+			throws Exception {
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName()) + " where 1=1 " + where
 				+ " limit " + start + "," + pageNum;
 		Cursor cursor = sDatabase.rawQuery(sqlString, selectionArgs);
-		try {
-			return outObjectList(cursor, cla);
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		return outObjectList(cursor, cla);
 	}
 
 	/**

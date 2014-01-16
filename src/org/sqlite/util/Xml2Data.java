@@ -3,13 +3,11 @@ package org.sqlite.util;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.Table;
 import org.sqlite.module.TableValue;
-import org.sqlite.module.User;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
@@ -43,7 +41,8 @@ public class Xml2Data {
 	// /**
 	// * 类与表的对照map
 	// */
-//	public static HashMap<String, String> ClassForTabelName = new HashMap<String, String>();
+	// public static HashMap<String, String> ClassForTabelName = new
+	// HashMap<String, String>();
 
 	/**
 	 * 构造方法，取得context获取配置文件
@@ -106,7 +105,7 @@ public class Xml2Data {
 					Class className = Class.forName(dataParser
 							.getAttributeValue(null, "ref"));
 					// 将表名与类名放入map
-//					ClassForTabelName.put(className.getName(), tableName);
+					// ClassForTabelName.put(className.getName(), tableName);
 					createSql.append("create table ");
 					createSql.append(tableName + "(");
 					// 获取表内各个项
