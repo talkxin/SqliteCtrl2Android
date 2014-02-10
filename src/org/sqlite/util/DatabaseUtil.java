@@ -6,10 +6,17 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
+import org.sqlite.annotation.DataType;
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.Table;
 import org.sqlite.module.TableType;
+import org.sqlite.module.TableValue;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.ContentValues;
 
@@ -26,7 +33,7 @@ public class DatabaseUtil {
 	 * @throws IllegalArgumentException
 	 * @throws IOException
 	 */
-	public static <T> TableType getObjectContentValues(boolean i, T object)
+	protected <T> TableType getObjectContentValues(boolean i, T object)
 			throws IllegalArgumentException, IllegalAccessException,
 			IOException {
 		// 创建class
@@ -118,7 +125,7 @@ public class DatabaseUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public static byte[] serialize(Object obj) throws IOException {
+	protected byte[] serialize(Object obj) throws IOException {
 		ObjectOutputStream oos = null;
 		ByteArrayOutputStream baos = null;
 		// 序列化
@@ -137,12 +144,106 @@ public class DatabaseUtil {
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	public static Object unserialize(byte[] bytes) throws IOException,
+	protected static Object unserialize(byte[] bytes) throws IOException,
 			ClassNotFoundException {
 		ByteArrayInputStream bais = null;
 		// 反序列化
 		bais = new ByteArrayInputStream(bytes);
 		ObjectInputStream ois = new ObjectInputStream(bais);
 		return ois.readObject();
+	}
+
+	/**
+	 * 返回表的所有類型值
+	 * @param xml
+	 * @return
+	 * @throws XmlPullParserException 
+	 * @throws ClassNotFoundException 
+	 */
+	protected HashMap<String, HashMap<String, TableValue>> getTableMap(
+			XmlPullParser dataParser) throws XmlPullParserException, ClassNotFoundException {
+		// 表更新时使用的hashmap
+		HashMap<String, HashMap<String, TableValue>> tableMap = new HashMap<String, HashMap<String, TableValue>>();
+		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
+			// 判断标签的起始位置
+			if (dataParser.getEventType() == XmlPullParser.START_TAG) {
+				// 判断如果标签为table的话
+				if ("table".equals(dataParser.getName())) {
+					// 获得表名
+					String tableName = dataParser.getAttributeValue(null,
+							"name");
+					// 获得Class
+					Class className = Class.forName(dataParser
+							.getAttributeValue(null, "ref"));
+					// 獲取的表屬性及其表對比值
+					Object[] tableObjects = getTablePorperty(className);
+					tableMap.put(tableName, (HashMap<String, TableValue>) tableObjects[1]);
+				}
+				}
+			}
+		return tableMap;
+	}
+	
+	/**
+	 * 私有方法，通过注解类的class来获取创建表的各项元素
+	 * 
+	 * @param <T>
+	 * 
+	 * @param cla
+	 * @return
+	 */
+	protected <T> Object[] getTablePorperty(Class<T> cla) {
+		// 创建对比map
+		HashMap<String, TableValue> map = new HashMap<String, TableValue>();
+		Field[] allFields = cla.getDeclaredFields();
+		List<TableValue> list = new ArrayList<TableValue>();
+		for (Field field : allFields) {
+			Property property = field.getAnnotation(Property.class);
+			TableValue tableValue = new TableValue();
+			tableValue.isPlus = property.isPlus();
+			tableValue.length = property.length();
+			tableValue.name = property.name().equals("") ? field.getName()
+					: property.name();
+			tableValue.notNull = property.notNull();
+			if (property.type().equals("")) {
+				if (field.getType().toString()
+						.equals("class java.lang.Integer")) {
+					tableValue.type = DataType.INT;
+				} else if (field.getType().toString()
+						.equals("class java.lang.Double")) {
+					tableValue.type = DataType.DOUBLE;
+				} else if (field.getType().toString()
+						.equals("class java.lang.Long")) {
+					tableValue.type = DataType.BIGINT;
+				} else {
+					// 其他类型直接存储为二进制对象並且進行反序列化
+					tableValue.type = DataType.BLOB;
+				}
+			} else {
+				tableValue.type = property.type();
+			}
+			// 加入对比map
+			map.put(tableValue.name, tableValue);
+			list.add(tableValue);
+		}
+		return new Object[] { list, map };
+	}
+
+	/**
+	 * 私有方法 获取主键
+	 * 
+	 * @param <T>
+	 * 
+	 * @param cla
+	 * @return
+	 */
+	protected <T> String getTableKye(Class<T> cla) {
+		Table table = (Table) cla
+				.getAnnotation(org.sqlite.annotation.Table.class);
+		if (table != null)
+			return table.kyeName();
+		else
+			return "";
+
 	}
 }

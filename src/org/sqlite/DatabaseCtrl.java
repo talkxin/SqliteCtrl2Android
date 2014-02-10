@@ -35,7 +35,7 @@ import android.util.Xml;
  * @author talkliu
  * 
  */
-public class DatabaseCtrl {
+public class DatabaseCtrl extends DatabaseUtil {
 	/**
 	 * 传入的activity
 	 */
@@ -200,7 +200,7 @@ public class DatabaseCtrl {
 		sDatabase = dbBase.getWritableDatabase();
 		long count = sDatabase.insert(
 				ClassForTabelName.get(object.getClass().getName()), null,
-				DatabaseUtil.getObjectContentValues(true, object).values);
+				getObjectContentValues(true, object).values);
 		sDatabase.close();
 		return count;
 	}
@@ -231,8 +231,7 @@ public class DatabaseCtrl {
 	 */
 	public <T> int update2Id(T object) throws IllegalArgumentException,
 			IllegalAccessException, IOException {
-		TableType tableType = DatabaseUtil
-				.getObjectContentValues(false, object);
+		TableType tableType = getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return 0;
 		// 初始化连接
@@ -276,8 +275,7 @@ public class DatabaseCtrl {
 	 */
 	public <T> int delete2Id(T object) throws IllegalArgumentException,
 			IllegalAccessException, IOException {
-		TableType tableType = DatabaseUtil
-				.getObjectContentValues(false, object);
+		TableType tableType = getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return 0;
 		// 初始化连接
@@ -315,8 +313,7 @@ public class DatabaseCtrl {
 	 * @return
 	 */
 	public <T> T query2Id(T object) throws Exception {
-		TableType tableType = DatabaseUtil
-				.getObjectContentValues(false, object);
+		TableType tableType = getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return null;
 		// 初始化连接
@@ -520,7 +517,7 @@ public class DatabaseCtrl {
 				case CLOB:
 				case BLOB:
 					// unSerialize
-					input = DatabaseUtil.unserialize(cursor.getBlob(tableName));
+					input = unserialize(cursor.getBlob(tableName));
 					break;
 				case REAL:
 					break;
