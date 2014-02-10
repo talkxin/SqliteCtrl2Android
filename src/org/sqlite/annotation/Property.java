@@ -27,14 +27,14 @@ public @interface Property {
 	 * 
 	 * @return
 	 */
-	String type() default "";
+	DataType type() default DataType.VARCHAR;
 
 	/**
-	 * 字段长度
+	 * 字段长度,默认长度为255
 	 * 
 	 * @return
 	 */
-	int length();
+	int length() default 255;
 
 	/**
 	 * 是否自增长 默认为false
@@ -56,4 +56,11 @@ public @interface Property {
 	 * @return
 	 */
 	String defaultString() default "";
+//
+//	/**
+//	 * 用来支持BOLB类型字段对象是否反序列化属性
+//	 * 
+//	 * @return
+//	 */
+//	boolean serialization() default true;
 }

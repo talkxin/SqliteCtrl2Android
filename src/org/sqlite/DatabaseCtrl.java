@@ -1,6 +1,11 @@
 package org.sqlite;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -10,8 +15,11 @@ import java.util.List;
 
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.Table;
+import org.sqlite.module.TableType;
 import org.sqlite.util.DataBase;
+import org.sqlite.util.DatabaseUtil;
 import org.sqlite.util.Xml2Data;
+import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.ContentValues;
@@ -19,6 +27,7 @@ import android.content.Context;
 import android.content.res.XmlResourceParser;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Xml;
 
 /**
  * 数据库增删查改操作类
@@ -42,6 +51,38 @@ public class DatabaseCtrl {
 	private HashMap<String, String> ClassForTabelName = new HashMap<String, String>();
 
 	/**
+	 * 创建xml对象
+	 */
+	private static XmlPullParser dataParser = Xml.newPullParser();
+
+	/**
+	 * 数据库链接
+	 */
+	private DataBase dbBase;
+
+	public static int VERSION;
+
+	static void init() throws ClassNotFoundException, XmlPullParserException {
+		// TODO Auto-generated method stub
+		Class.forName("dalvik.system.VMRuntime");
+		dataParser
+				.setInput(DatabaseCtrl.class
+						.getResourceAsStream("/res/xml/database.xml"), "utf-8");
+	}
+
+	static {
+		try {
+			init();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (XmlPullParserException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
 	 * 构造方法，传入context获取默认数据库
 	 * 
 	 * @param context
@@ -50,15 +91,15 @@ public class DatabaseCtrl {
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
 	 */
-	public DatabaseCtrl(Context context, Integer database)
-			throws XmlPullParserException, IOException, ClassNotFoundException {
+	public DatabaseCtrl(Context context) throws XmlPullParserException,
+			IOException, ClassNotFoundException {
 		this.context = context;
 		// 初始化表类对应
-		onCreateTable(database);
+		onCreateTable();
 		// 连接数据库数据库
-		DataBase dbBase = new DataBase(context, database, true);
-		// 初始化连接
-		sDatabase = dbBase.getWritableDatabase();
+		dbBase = new DataBase(context, dataParser, true, VERSION);
+		// // 初始化连接
+		// sDatabase = dbBase.getWritableDatabase();
 	}
 
 	/**
@@ -71,16 +112,16 @@ public class DatabaseCtrl {
 	 * @throws XmlPullParserException
 	 * @throws IOException
 	 */
+	@Deprecated
 	public DatabaseCtrl(Context context, Integer database, String databaseName)
 			throws IOException, XmlPullParserException, ClassNotFoundException {
 		this.context = context;
 		// 初始化表类对应
-		onCreateTable(database);
+		onCreateTable();
 		// 连接数据库数据库
-		DataBase dbBase = new DataBase(context, databaseName, DataBase.VERSION,
-				false);
-		// 初始化连接
-		sDatabase = dbBase.getWritableDatabase();
+		dbBase = new DataBase(context, databaseName, DataBase.VERSION, false);
+		// // 初始化连接
+		// sDatabase = dbBase.getWritableDatabase();
 	}
 
 	/**
@@ -94,16 +135,16 @@ public class DatabaseCtrl {
 	 * @throws XmlPullParserException
 	 * @throws IOException
 	 */
-	public DatabaseCtrl(Context context, Integer database, String databaseName,
-			int version) throws IOException, XmlPullParserException,
-			ClassNotFoundException {
+	@Deprecated
+	public DatabaseCtrl(Context context, String databaseName, int version)
+			throws IOException, XmlPullParserException, ClassNotFoundException {
 		this.context = context;
 		// 初始化表类对应
-		onCreateTable(database);
+		onCreateTable();
 		// 连接数据库数据库
-		DataBase dbBase = new DataBase(context, databaseName, version, false);
-		// 初始化连接
-		sDatabase = dbBase.getWritableDatabase();
+		dbBase = new DataBase(context, databaseName, version, false);
+		// // 初始化连接
+		// sDatabase = dbBase.getWritableDatabase();
 	}
 
 	/**
@@ -115,24 +156,25 @@ public class DatabaseCtrl {
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
 	 */
-	public DatabaseCtrl(Context context, Integer database, int version)
+	public DatabaseCtrl(Context context, int version)
 			throws XmlPullParserException, IOException, ClassNotFoundException {
 		this.context = context;
 		// 初始化表类对应
-		onCreateTable(database);
+		onCreateTable();
 		// 连接数据库数据库
-		DataBase dbBase = new DataBase(context,
-				new Xml2Data(context, database).getDatabaseName(), version,
+		dbBase = new DataBase(context,
+				new Xml2Data(context, dataParser).getDatabaseName(), version,
 				true);
-		// 初始化连接
-		sDatabase = dbBase.getWritableDatabase();
+		// // 初始化连接
+		// sDatabase = dbBase.getWritableDatabase();
 	}
 
 	/**
 	 * 关闭数据库连接
 	 */
+	@Deprecated
 	public void close() {
-		sDatabase.close();
+		// sDatabase.close();
 	}
 
 	/**
@@ -150,12 +192,17 @@ public class DatabaseCtrl {
 	 * @param object
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
+	 * @throws IOException
 	 */
 	public <T> long insert(T object) throws IllegalArgumentException,
-			IllegalAccessException {
-		return sDatabase.insert(
+			IllegalAccessException, IOException {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		long count = sDatabase.insert(
 				ClassForTabelName.get(object.getClass().getName()), null,
-				getObjectContentValues(true, object).values);
+				DatabaseUtil.getObjectContentValues(true, object).values);
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -167,7 +214,11 @@ public class DatabaseCtrl {
 	 *            ContentValues的使用方法与map相同
 	 */
 	public long insert(String tableName, ContentValues values) throws Exception {
-		return sDatabase.insert(tableName, null, values);
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		long count = sDatabase.insert(tableName, null, values);
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -176,16 +227,22 @@ public class DatabaseCtrl {
 	 * @param objext
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
+	 * @throws IOException
 	 */
 	public <T> int update2Id(T object) throws IllegalArgumentException,
-			IllegalAccessException {
-		TableType tableType = getObjectContentValues(false, object);
+			IllegalAccessException, IOException {
+		TableType tableType = DatabaseUtil
+				.getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return 0;
-		return sDatabase.update(ClassForTabelName.get(object.getClass()
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		int count = sDatabase.update(ClassForTabelName.get(object.getClass()
 				.getName()), tableType.values, tableType.tableKey + "=?",
 				new String[] { String.valueOf(tableType.values
 						.get(tableType.tableKey)) });
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -202,7 +259,11 @@ public class DatabaseCtrl {
 	 */
 	public int update2Where(String table, ContentValues values,
 			String whereClause, String... whereArgs) {
-		return sDatabase.update(table, values, whereClause, whereArgs);
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		int count = sDatabase.update(table, values, whereClause, whereArgs);
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -211,15 +272,21 @@ public class DatabaseCtrl {
 	 * @param object
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
+	 * @throws IOException
 	 */
 	public <T> int delete2Id(T object) throws IllegalArgumentException,
-			IllegalAccessException {
-		TableType tableType = getObjectContentValues(false, object);
+			IllegalAccessException, IOException {
+		TableType tableType = DatabaseUtil
+				.getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return 0;
-		return sDatabase.delete(tableType.tableKey, tableType.tableKey + "=?",
-				new String[] { String.valueOf(tableType.values
-						.get(tableType.tableKey)) });
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		int count = sDatabase.delete(tableType.tableKey, tableType.tableKey
+				+ "=?", new String[] { String.valueOf(tableType.values
+				.get(tableType.tableKey)) });
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -234,7 +301,11 @@ public class DatabaseCtrl {
 	 */
 	public int delete2Where(String table, String whereClause,
 			String... whereArgs) throws Exception {
-		return sDatabase.delete(table, whereClause, whereArgs);
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		int count = sDatabase.delete(table, whereClause, whereArgs);
+		sDatabase.close();
+		return count;
 	}
 
 	/**
@@ -244,15 +315,19 @@ public class DatabaseCtrl {
 	 * @return
 	 */
 	public <T> T query2Id(T object) throws Exception {
-		TableType tableType = getObjectContentValues(false, object);
+		TableType tableType = DatabaseUtil
+				.getObjectContentValues(false, object);
 		if (tableType.tableKey == null || tableType.tableKey.equals(""))
 			return null;
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(object.getClass().getName())
 				+ " where " + tableType.tableKey + "=?";
 		Cursor cursor = sDatabase.rawQuery(sqlString, new String[] { String
 				.valueOf(tableType.values.get(tableType.tableKey)) });
 		List<T> list = outObjectList(cursor, object.getClass());
+		sDatabase.close();
 		return list.size() != 0 ? list.get(0) : null;
 	}
 
@@ -269,9 +344,12 @@ public class DatabaseCtrl {
 	 */
 	public <T> T query2Where(Class cla, String sql, String... selectionArgs)
 			throws Exception {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		Cursor cursor = sDatabase.rawQuery(sql, selectionArgs);
 		List<T> list;
 		list = outObjectList(cursor, cla);
+		sDatabase.close();
 		return list.size() != 0 ? list.get(0) : null;
 	}
 
@@ -284,9 +362,12 @@ public class DatabaseCtrl {
 	 * @return
 	 */
 	public <T> List<T> queryAllObject(Class cla) throws Exception {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName());
 		Cursor cursor = sDatabase.rawQuery(sqlString, null);
+		sDatabase.close();
 		return outObjectList(cursor, cla);
 	}
 
@@ -311,10 +392,13 @@ public class DatabaseCtrl {
 	public <T> List<T> queryAllObjectForLimit(Class cla, int start,
 			int pageNum, String where, String... selectionArgs)
 			throws Exception {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName()) + " where 1=1 " + where
 				+ " limit " + start + "," + pageNum;
 		Cursor cursor = sDatabase.rawQuery(sqlString, selectionArgs);
+		sDatabase.close();
 		return outObjectList(cursor, cla);
 	}
 
@@ -326,10 +410,13 @@ public class DatabaseCtrl {
 	 * @throws Exception
 	 */
 	public Integer queryCount(Class cla) {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		String table = ClassForTabelName.get(cla.getName());
 		String sqlString = "select count(*) as count from " + table;
 		Cursor cursor = sDatabase.rawQuery(sqlString, null);
 		cursor.moveToFirst();
+		sDatabase.close();
 		return Integer
 				.parseInt(cursor.getString(cursor.getColumnIndex("count")));
 	}
@@ -341,7 +428,10 @@ public class DatabaseCtrl {
 	 * @param obj
 	 */
 	public void execForSql(String sql, Object[] obj) {
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
 		sDatabase.execSQL(sql, obj);
+		sDatabase.close();
 	}
 
 	/**
@@ -352,57 +442,11 @@ public class DatabaseCtrl {
 	 * @return Cursor的操作与map相同
 	 */
 	public Cursor queryForSql(String sql, String[] obj) {
-		return sDatabase.rawQuery(sql, obj);
-	}
-
-	/**
-	 * 返回结果集
-	 * 
-	 * @param <T>
-	 * 
-	 * @param i
-	 *            判断是否使用默认值，除在insert时使用其他操作不使用结果集
-	 * @return
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 */
-	private <T> TableType getObjectContentValues(boolean i, T object)
-			throws IllegalArgumentException, IllegalAccessException {
-		// 创建class
-		Class cla = object.getClass();
-		// 创建一个结果集对象
-		TableType tableType = new TableType();
-		// 返回类注解
-		Table table = (Table) cla
-				.getAnnotation(org.sqlite.annotation.Table.class);
-		if (table != null && table.kyeName() != null)
-			tableType.tableKey = table.kyeName();
-		else
-			tableType.tableKey = "";
-		// 返回cla的所有内容
-		Field[] allFields = cla.getDeclaredFields();
-		// 创建一个结果集
-		ContentValues values = new ContentValues();
-		for (Field field : allFields) {
-			// 参数值为true，禁用访问控制检查
-			field.setAccessible(true);
-			// 获取私有属性值
-			String vString = String.valueOf(field.get(object));
-			// 返回属性注解
-			Property property = field.getAnnotation(Property.class);
-			if (!property.isPlus() && !i) {
-				// 非递增属性并且不是用默认值
-				values.put(property.name().equals("") ? field.getName()
-						: property.name(), vString);
-			} else if (!property.isPlus() && i) {
-				// 非递增，并且使用默认值
-				values.put(property.name().equals("") ? field.getName()
-						: property.name(),
-						vString.equals("") ? property.defaultString() : vString);
-			}
-		}
-		tableType.values = values;
-		return tableType;
+		// 初始化连接
+		sDatabase = dbBase.getWritableDatabase();
+		Cursor cursor = sDatabase.rawQuery(sql, obj);
+		sDatabase.close();
+		return cursor;
 	}
 
 	/**
@@ -418,12 +462,13 @@ public class DatabaseCtrl {
 	 * @throws NoSuchMethodException
 	 * @throws InvocationTargetException
 	 * @throws IllegalArgumentException
+	 * @throws IOException
 	 */
 	public static <T> List<T> outObjectList(Cursor cursor, Class cl)
 			throws InstantiationException, IllegalAccessException,
 			NoSuchMethodException, ClassNotFoundException,
 			NoSuchFieldException, IllegalArgumentException,
-			InvocationTargetException {
+			InvocationTargetException, IOException {
 		List<T> objList = new ArrayList<T>();
 		// String[] nameStrings = cursor.getColumnNames();
 		while (cursor.moveToNext()) {
@@ -435,15 +480,56 @@ public class DatabaseCtrl {
 				Property property = field.getAnnotation(Property.class);
 				Constructor con = field.getType().getConstructor(String.class);
 				field.setAccessible(true);
-				String input = null;
+				Object input = null;
 				// 若列名为属性名的则直接转换
-				if (property.name().equals("")) {
-					input = cursor.getString(cursor.getColumnIndex(field
-							.getName()));
-				} else {
-					// 若列名不是属性名的，获取注解中的列名获取值
-					input = cursor.getString(cursor.getColumnIndex(property
-							.name()));
+				int tableName = cursor.getColumnIndex(property.name()
+						.equals("") ? field.getName() : property.name());
+				// if (property.name().equals("")) {
+				// input = cursor.getString(cursor.getColumnIndex(field
+				// .getName()));
+				// } else {
+				// // 若列名不是属性名的，获取注解中的列名获取值
+				// input = cursor.getString(cursor.getColumnIndex(property
+				// .name()));
+				// }
+				// 判断类型
+				switch (property.type()) {
+				case BIGINT:
+				case INT:
+				case TINYINT:
+				case SMALLINT:
+				case MEDIUMINT:
+				case UNSIGNED_BIG_INT:
+				case INT2:
+				case INT8:
+				case CHARACTER:
+				case VARCHAR:
+				case VARYING_CHARACTER:
+				case NCHAR:
+				case NATIVE_CHARACTER:
+				case NVARCHAR:
+				case TEXT:
+				case DOUBLE:
+				case DOUBLE_PRECISION:
+				case FLOAT:
+				case NUMERIC:
+				case BOOLEAN:
+				case DECIMAL:
+					input = cursor.getString(tableName);
+					break;
+				case CLOB:
+				case BLOB:
+					// unSerialize
+					input = DatabaseUtil.unserialize(cursor.getBlob(tableName));
+					break;
+				case REAL:
+					break;
+				case DATE:
+					break;
+				case DATETIME:
+					break;
+				default:
+					break;
 				}
 				if (input != null) {
 					field.set(object, con.newInstance(input));
@@ -455,35 +541,22 @@ public class DatabaseCtrl {
 	}
 
 	/**
-	 * 存储主键与结果集的对象
-	 * 
-	 * @author talkliu
-	 * 
-	 */
-	private class TableType {
-		/**
-		 * ' 主键名
-		 */
-		public String tableKey;
-		/**
-		 * 进行操作的结果集
-		 */
-		public ContentValues values;
-	}
-
-	/**
 	 * 初始化表名与类的对比map
 	 * 
 	 * @throws IOException
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
 	 */
-	protected void onCreateTable(Integer xml) throws IOException,
-			XmlPullParserException, ClassNotFoundException {
-		XmlResourceParser dataParser = context.getResources().getXml(xml);
-		while (dataParser.getEventType() != XmlResourceParser.END_DOCUMENT) {
+	protected void onCreateTable() throws IOException, XmlPullParserException,
+			ClassNotFoundException {
+		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
 			// 判断标签的起始位置
-			if (dataParser.getEventType() == XmlResourceParser.START_TAG) {
+			if (dataParser.getEventType() == XmlPullParser.START_TAG) {
+				if ("head".equals(dataParser.getName())) {
+					VERSION = Integer.parseInt(dataParser.getAttributeValue(
+							null, "version"));
+					break;
+				}
 				// 判断如果标签为table的话
 				if ("table".equals(dataParser.getName())) {
 					// 获得表名
@@ -498,6 +571,6 @@ public class DatabaseCtrl {
 			}
 			dataParser.next();
 		}
-		dataParser.close();
+		// dataParser.close();
 	}
 }
