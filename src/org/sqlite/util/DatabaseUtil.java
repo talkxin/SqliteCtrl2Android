@@ -25,7 +25,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-public class DatabaseUtil{
+public class DatabaseUtil {
 	/**
 	 * 返回结果集
 	 * 
@@ -213,7 +213,7 @@ public class DatabaseUtil{
 			tableValue.name = property.name().equals("") ? field.getName()
 					: property.name();
 			tableValue.notNull = property.notNull();
-			if (property.type().equals("")) {
+			if (property.type() == null) {
 				if (field.getType().toString()
 						.equals("class java.lang.Integer")) {
 					tableValue.type = SQLType.INT;
