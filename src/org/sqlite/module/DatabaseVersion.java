@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import org.sqlite.annotation.Property;
-import org.sqlite.annotation.DataType;
+import org.sqlite.annotation.SQLType;
 import org.xmlpull.v1.XmlPullParser;
 
 public class DatabaseVersion implements Serializable {
-	@Property(isPlus = true)
+	@Property(type = SQLType.INTEGER)
 	private Integer version;
-	@Property(type = DataType.BLOB)
+	@Property(type = SQLType.BLOB)
 	private HashMap<String, HashMap<String, TableValue>> tableMap;
 
 	public Integer getVersion() {

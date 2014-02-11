@@ -6,21 +6,26 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.sqlite.annotation.DataType;
+import org.sqlite.DatabaseCtrl;
+import org.sqlite.annotation.SQLType;
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.Table;
+import org.sqlite.module.DatabaseVersion;
 import org.sqlite.module.TableType;
 import org.sqlite.module.TableValue;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 
-public class DatabaseUtil {
+public class DatabaseUtil{
 	/**
 	 * 返回结果集
 	 * 
@@ -155,13 +160,15 @@ public class DatabaseUtil {
 
 	/**
 	 * 返回表的所有類型值
+	 * 
 	 * @param xml
 	 * @return
-	 * @throws XmlPullParserException 
-	 * @throws ClassNotFoundException 
+	 * @throws XmlPullParserException
+	 * @throws ClassNotFoundException
 	 */
 	protected HashMap<String, HashMap<String, TableValue>> getTableMap(
-			XmlPullParser dataParser) throws XmlPullParserException, ClassNotFoundException {
+			XmlPullParser dataParser) throws XmlPullParserException,
+			ClassNotFoundException {
 		// 表更新时使用的hashmap
 		HashMap<String, HashMap<String, TableValue>> tableMap = new HashMap<String, HashMap<String, TableValue>>();
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
@@ -177,13 +184,14 @@ public class DatabaseUtil {
 							.getAttributeValue(null, "ref"));
 					// 獲取的表屬性及其表對比值
 					Object[] tableObjects = getTablePorperty(className);
-					tableMap.put(tableName, (HashMap<String, TableValue>) tableObjects[1]);
-				}
+					tableMap.put(tableName,
+							(HashMap<String, TableValue>) tableObjects[1]);
 				}
 			}
+		}
 		return tableMap;
 	}
-	
+
 	/**
 	 * 私有方法，通过注解类的class来获取创建表的各项元素
 	 * 
@@ -208,16 +216,16 @@ public class DatabaseUtil {
 			if (property.type().equals("")) {
 				if (field.getType().toString()
 						.equals("class java.lang.Integer")) {
-					tableValue.type = DataType.INT;
+					tableValue.type = SQLType.INT;
 				} else if (field.getType().toString()
 						.equals("class java.lang.Double")) {
-					tableValue.type = DataType.DOUBLE;
+					tableValue.type = SQLType.DOUBLE;
 				} else if (field.getType().toString()
 						.equals("class java.lang.Long")) {
-					tableValue.type = DataType.BIGINT;
+					tableValue.type = SQLType.BIGINT;
 				} else {
 					// 其他类型直接存储为二进制对象並且進行反序列化
-					tableValue.type = DataType.BLOB;
+					tableValue.type = SQLType.BLOB;
 				}
 			} else {
 				tableValue.type = property.type();
@@ -245,5 +253,33 @@ public class DatabaseUtil {
 		else
 			return "";
 
+	}
+
+	/**
+	 * 获取最新数据库版本
+	 * 
+	 * @param db
+	 * @return
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws NoSuchMethodException
+	 * @throws ClassNotFoundException
+	 * @throws NoSuchFieldException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws IOException
+	 * @throws XmlPullParserException
+	 */
+	protected DatabaseVersion getDatabaseVersion(SQLiteDatabase db)
+			throws InstantiationException, IllegalAccessException,
+			NoSuchMethodException, ClassNotFoundException,
+			NoSuchFieldException, IllegalArgumentException,
+			InvocationTargetException, IOException, XmlPullParserException {
+		// 获取前一版的表数据结构
+		String sqlString = "select * from system_sqliteCtrl_databaseVersion order by version desc limit 1";
+		Cursor cursor = db.rawQuery(sqlString, null);
+		DatabaseVersion dv = (DatabaseVersion) DatabaseCtrl.outObjectList(
+				cursor, DatabaseVersion.class).get(0);
+		return dv;
 	}
 }

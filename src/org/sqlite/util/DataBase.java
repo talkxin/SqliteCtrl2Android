@@ -62,7 +62,7 @@ public class DataBase extends SQLiteOpenHelper {
 		// 表结构初始化'
 		if (isonCreate) {
 			try {
-				//初始化版本
+				// 初始化版本
 				new databaseTableVersion().setOnCreate(db);
 				for (String sql : new Xml2Data(context, xml).getCreateSql()) {
 					db.execSQL(sql);
@@ -93,10 +93,13 @@ public class DataBase extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		// 表结构更新
 		try {
-			Object[] table=new databaseTableVersion().setOnUpgrade(db);
-			for(String sql:new Xml2Data(context, xml).getUpdateSql(((DatabaseVersion)table[0]).getTableMap(), (List<String>)table[1])){
+			databaseTableVersion data=new databaseTableVersion();
+			for (String sql : new Xml2Data(context, xml)
+					.getUpdateSql(data.getDatabaseVersion(db).getTableMap())) {
 				db.execSQL(sql);
 			}
+			data.setOnUpdate(db);
+			
 		} catch (InstantiationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -123,7 +126,7 @@ public class DataBase extends SQLiteOpenHelper {
 			e.printStackTrace();
 		}
 		// new Xml2Data(context, xml).getUpdateSql(map)
- catch (XmlPullParserException e) {
+		catch (XmlPullParserException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -136,15 +139,17 @@ public class DataBase extends SQLiteOpenHelper {
 	public void setUpdateDatabasesList(List<String> updateDatabasesList) {
 		this.updateDatabasesList = updateDatabasesList;
 	}
-	
+
 	/**
 	 * 用于更新表数据的各种方法
+	 * 
 	 * @author young
-	 *
+	 * 
 	 */
-	private class databaseTableVersion extends DatabaseUtil{
+	private class databaseTableVersion extends DatabaseUtil {
 		/**
 		 * 初始化表结构
+		 * 
 		 * @param db
 		 * @throws ClassNotFoundException
 		 * @throws XmlPullParserException
@@ -152,7 +157,9 @@ public class DataBase extends SQLiteOpenHelper {
 		 * @throws IllegalAccessException
 		 * @throws IOException
 		 */
-		public void setOnCreate(SQLiteDatabase db) throws ClassNotFoundException, XmlPullParserException, IllegalArgumentException, IllegalAccessException, IOException{
+		public void setOnCreate(SQLiteDatabase db)
+				throws ClassNotFoundException, XmlPullParserException,
+				IllegalArgumentException, IllegalAccessException, IOException {
 			// 表更新时使用的hashmap
 			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap(xml);
 			DatabaseVersion databaseVersion = new DatabaseVersion();
@@ -160,44 +167,29 @@ public class DataBase extends SQLiteOpenHelper {
 			db.execSQL("create table system_sqliteCtrl_databaseVersion(version integer,tableMap BLOB)");
 			// 插入最初表结构版本
 			db.insert("system_sqliteCtrl_databaseVersion", null,
-					getObjectContentValues(true,
-							databaseVersion).values);
+					getObjectContentValues(true, databaseVersion).values);
 		}
+
+
 		/**
 		 * 更新表結構用
 		 * @param db
-		 * @return
-		 * @throws InstantiationException
-		 * @throws IllegalAccessException
-		 * @throws NoSuchMethodException
 		 * @throws ClassNotFoundException
-		 * @throws NoSuchFieldException
+		 * @throws XmlPullParserException
 		 * @throws IllegalArgumentException
-		 * @throws InvocationTargetException
+		 * @throws IllegalAccessException
 		 * @throws IOException
-		 * @throws XmlPullParserException 
 		 */
-		public Object[] setOnUpgrade(SQLiteDatabase db) throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException, NoSuchFieldException, IllegalArgumentException, InvocationTargetException, IOException, XmlPullParserException{
-			//获取前一版的表数据结构
-			String sqlString = "select * from system_sqliteCtrl_databaseVersion order by version desc limit 1";
-			String getTables="select * from sqlite_master";
-			Cursor tabnm=db.rawQuery(getTables, null);
-			List<String> tab_name=new ArrayList<String>();
-			while (tabnm.moveToNext()) {
-				tab_name.add(tabnm.getString(tabnm.getColumnIndex("tbl_name")));
-			}
-			Cursor cursor = db.rawQuery(sqlString, null);
-			DatabaseVersion dv=(DatabaseVersion) DatabaseCtrl.outObjectList(cursor, DatabaseVersion.class).get(0);
-			//保存新版本
+		public void setOnUpdate(SQLiteDatabase db)
+				throws ClassNotFoundException, XmlPullParserException,
+				IllegalArgumentException, IllegalAccessException, IOException {
+			// 保存新版本
 			// 表更新时使用的hashmap
 			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap(xml);
 			DatabaseVersion databaseVersion = new DatabaseVersion();
 			databaseVersion.setTableMap(tableMap);
 			db.insert("system_sqliteCtrl_databaseVersion", null,
-					getObjectContentValues(true,
-							databaseVersion).values);
-			
-			return new Object[]{dv,tab_name};
+					getObjectContentValues(true, databaseVersion).values);
 		}
 	}
 

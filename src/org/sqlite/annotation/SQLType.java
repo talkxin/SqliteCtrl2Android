@@ -5,7 +5,7 @@ package org.sqlite.annotation;
  * @author young
  *
  */
-public enum DataType {
+public enum SQLType {
 	INT,
 	INTEGER,
 	TINYINT,

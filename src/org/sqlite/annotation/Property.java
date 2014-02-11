@@ -27,20 +27,21 @@ public @interface Property {
 	 * 
 	 * @return
 	 */
-	DataType type() default DataType.VARCHAR;
+	SQLType type();
 
 	/**
 	 * 字段长度,默认长度为255
 	 * 
 	 * @return
 	 */
-	int length() default 255;
+	int length() default 0;
 
 	/**
 	 * 是否自增长 默认为false
 	 * 
 	 * @return
 	 */
+	@Deprecated
 	boolean isPlus() default false;
 
 	/**

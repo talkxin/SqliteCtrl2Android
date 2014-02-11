@@ -1,18 +1,12 @@
 package org.sqlite.util;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
-import org.sqlite.annotation.Property;
-import org.sqlite.annotation.Table;
-import org.sqlite.annotation.DataType;
 import org.sqlite.module.TableValue;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -95,54 +89,12 @@ public class Xml2Data extends DatabaseUtil{
 		// 表的集合
 		List<String> list = new ArrayList<String>();
 		// 组建创建表的StringBuffer对象
-		StringBuffer createSql = null;
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
 			// 判断标签的起始位置
 			if (dataParser.getEventType() == XmlPullParser.START_TAG) {
 				// 判断如果标签为table的话
 				if ("table".equals(dataParser.getName())) {
-					createSql = new StringBuffer();
-					// 获得表名
-					String tableName = dataParser.getAttributeValue(null,
-							"name");
-					// 获得Class
-					Class className = Class.forName(dataParser
-							.getAttributeValue(null, "ref"));
-					// 将表名与类名放入map
-					// ClassForTabelName.put(className.getName(), tableName);
-					createSql.append("create table ");
-					createSql.append(tableName + "(");
-					// 獲取的表屬性及其表對比值
-					Object[] tableObjects = getTablePorperty(className);
-					// 获取表内各个项
-					List<TableValue> tableProerty = (List<TableValue>) tableObjects[0];
-					// 获取主键
-					String key = getTableKye(className);
-					for (TableValue t : tableProerty) {
-						createSql.append(t.name + " ");
-						if (t.isPlus) {
-							// 如果为自增长则固定为Integer类型
-							createSql.append("integer ");
-						} else {
-							createSql.append(t.type + "(" + t.length + ") ");
-						}
-						if (!key.equals("") && t.name.equals(key)) {
-							// 如果为主键则加上主键约束
-							createSql.append("primary key ");
-						}
-						if (t.notNull) {
-							// 不为空约束
-							createSql.append("not null ");
-						}
-						// 一个字段建立完成
-						createSql.append(",");
-					}
-					// 移除最后一个,
-					createSql.replace(createSql.length() - 1,
-							createSql.length(), "");
-					// 一张表建立完成
-					createSql.append(")");
-					list.add(createSql.toString());
+					list.add(create_table(dataParser));
 				}
 			}
 			dataParser.next();
@@ -161,8 +113,7 @@ public class Xml2Data extends DatabaseUtil{
 	 * @throws ClassNotFoundException
 	 */
 	protected List<String> getUpdateSql(
-			HashMap<String, HashMap<String, TableValue>> map,
-			List<String> nowtbl) throws ClassNotFoundException,
+			HashMap<String, HashMap<String, TableValue>> map) throws ClassNotFoundException,
 			XmlPullParserException, IOException {
 		// 表的集合
 		List<String> list = new ArrayList<String>();
@@ -176,83 +127,37 @@ public class Xml2Data extends DatabaseUtil{
 					// 获得表名
 					String tableName = dataParser.getAttributeValue(null,
 							"name");
+					//获取表的老字段值
+					HashMap<String, TableValue> oldProperty;
 					// 判断是否有该表，若没有该表则直接添加新表
-					if (map.get(tableName) == null) {
-						createSql = new StringBuffer();
-						// 获得Class
-						Class className = Class.forName(dataParser
-								.getAttributeValue(null, "ref"));
-						// 将表名与类名放入map
-						// ClassForTabelName.put(className.getName(),
-						// tableName);
-						createSql.append("create table ");
-						createSql.append(tableName + "(");
-						// 獲取的表屬性及其表對比值
-						Object[] tableObjects = getTablePorperty(className);
-						// 获取表内各个项
-						List<TableValue> tableProerty = (List<TableValue>) tableObjects[0];
-						// 获取主键
-						String key = getTableKye(className);
-						for (TableValue t : tableProerty) {
-							createSql.append(t.name + " ");
-							if (t.isPlus) {
-								// 如果为自增长则固定为Integer类型
-								createSql.append("integer ");
-							} else {
-								createSql
-										.append(t.type + "(" + t.length + ") ");
-							}
-							if (!key.equals("") && t.name.equals(key)) {
-								// 如果为主键则加上主键约束
-								createSql.append("primary key ");
-							}
-							if (t.notNull) {
-								// 不为空约束
-								createSql.append("not null ");
-							}
-							// 一个字段建立完成
-							createSql.append(",");
-						}
-						// 移除最后一个,
-						createSql.replace(createSql.length() - 1,
-								createSql.length(), "");
-						// 一张表建立完成
-						createSql.append(")");
-						list.add(createSql.toString());
+					if ((oldProperty=map.get(tableName)) == null) {
+						list.add(create_table(dataParser));
 					} else {
-						//1、首先检查表名是否被修改
-						//2、检查各表的属性是否被修改
-						//2.1、检查属性是否被重命名
-						//2.2、检查新增属性
-						//2.3、检查被修改的属性
-						//2.4、检查被删除的属性
-						HashMap<String, TableValue> property = map
-								.get(tableName);
-						// 如果存在則判斷屬性值是否有修改
 						// 获得Class
 						Class className = Class.forName(dataParser
 								.getAttributeValue(null, "ref"));
 						// 獲取的表屬性及其表對比值
-						Object[] tableObjects = getTablePorperty(className);
-						// 获取表内各个项
-						List<TableValue> tableProerty = (List<TableValue>) tableObjects[0];
-						// 获取主键
-						String key = getTableKye(className);
-						Iterator iter = property.entrySet().iterator();
-						while (iter.hasNext()) {
-							Map.Entry entry = (Map.Entry) iter.next();
-						}
-						for (TableValue t : tableProerty) {
-							createSql = new StringBuffer();
-							createSql.append("ALTER TABLE ");
-							createSql.append(tableName + " ");
-							TableValue ot = null;
-							if ((ot = property.get(t.name)) != null) {
-
-							} else {
-								createSql.append("ADD " + t.name + " " + t.type
-										+ "(" + t.length + ")");
-								list.add(createSql.toString());
+						Object[] newTables = getTablePorperty(className);
+						HashMap<String, TableValue> newProperty = (HashMap<String, TableValue>) newTables[1];
+						Iterator ite=newProperty.entrySet().iterator();
+						//检查修改与新增
+						while(ite.hasNext()){
+							Entry entry = (Entry) ite.next();
+							StringBuffer alter;
+							TableValue ol;
+							String name=(String) entry.getKey();
+							TableValue ne=(TableValue) entry.getValue();
+							if((ol=oldProperty.get(name))==null){
+								alter=new StringBuffer();
+								String length="";
+								if(ne.length!=0){
+									length="(" + ne.length + ") ";
+								}
+								alter.append("ALTER TABLE "+tableName+" ADD ");
+								alter.append(ne.type+length);
+								//填入老字段中
+								oldProperty.put(name, ne);
+								list.add(alter.toString());
 							}
 						}
 					}
@@ -261,5 +166,59 @@ public class Xml2Data extends DatabaseUtil{
 			dataParser.next();
 		}
 		return null;
+	}
+	
+	/**
+	 * 返回生成表結構
+	 * @return
+	 * @throws ClassNotFoundException 
+	 */
+	private String create_table(XmlPullParser dataParser) throws ClassNotFoundException{
+		StringBuffer createSql = new StringBuffer();
+		// 获得表名
+		String tableName = dataParser.getAttributeValue(null,
+				"name");
+		// 获得Class
+		Class className = Class.forName(dataParser
+				.getAttributeValue(null, "ref"));
+		// 将表名与类名放入map
+		// ClassForTabelName.put(className.getName(), tableName);
+		createSql.append("create table ");
+		createSql.append(tableName + "(");
+		// 獲取的表屬性及其表對比值
+		Object[] tableObjects = getTablePorperty(className);
+		// 获取表内各个项
+		List<TableValue> tableProerty = (List<TableValue>) tableObjects[0];
+		// 获取主键
+		String key = getTableKye(className);
+		for (TableValue t : tableProerty) {
+			createSql.append(t.name + " ");
+			if (t.isPlus) {
+				// 如果为自增长则固定为Integer类型
+				createSql.append("integer ");
+			} else {
+				String length=" ";
+				if(t.length!=0){
+					length="(" + t.length + ") ";
+				}
+				createSql.append(t.type+length);
+			}
+			if (!key.equals("") && t.name.equals(key)) {
+				// 如果为主键则加上主键约束
+				createSql.append("primary key ");
+			}
+			if (t.notNull) {
+				// 不为空约束
+				createSql.append("not null ");
+			}
+			// 一个字段建立完成
+			createSql.append(",");
+		}
+		// 移除最后一个逗号
+		createSql.replace(createSql.length() - 1,
+				createSql.length(), "");
+		// 一张表建立完成
+		createSql.append(")");
+		return createSql.toString();
 	}
 }
