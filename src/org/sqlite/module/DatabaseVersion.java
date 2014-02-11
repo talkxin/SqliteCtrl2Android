@@ -5,7 +5,6 @@ import java.util.HashMap;
 
 import org.sqlite.annotation.Property;
 import org.sqlite.annotation.SQLType;
-import org.xmlpull.v1.XmlPullParser;
 
 public class DatabaseVersion implements Serializable {
 	@Property(type = SQLType.INTEGER)

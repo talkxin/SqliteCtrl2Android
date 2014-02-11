@@ -2,18 +2,14 @@ package org.sqlite.util;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.sqlite.DatabaseCtrl;
 import org.sqlite.module.DatabaseVersion;
 import org.sqlite.module.TableValue;
-import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -29,7 +25,6 @@ public class DataBase extends SQLiteOpenHelper {
 	public static final int VERSION = 1;
 	private List<String> updateDatabasesList;
 	private Context context;
-	private XmlPullParser xml = null;
 	private String xmlString = null;
 	private boolean isonCreate = false;
 
@@ -47,13 +42,10 @@ public class DataBase extends SQLiteOpenHelper {
 		this.context = context;
 	}
 
-	public DataBase(Context context, XmlPullParser database,
-			boolean isonCreate, int version) throws XmlPullParserException,
-			IOException {
-		this(context, new Xml2Data(context, database).getDatabaseName(),
-				version, isonCreate);
+	public DataBase(Context context, boolean isonCreate, int version)
+			throws XmlPullParserException, IOException, ClassNotFoundException {
+		this(context, new Xml2Data().getDatabaseName(), version, isonCreate);
 		this.context = context;
-		xml = database;
 	}
 
 	@Override
@@ -64,7 +56,7 @@ public class DataBase extends SQLiteOpenHelper {
 			try {
 				// 初始化版本
 				new databaseTableVersion().setOnCreate(db);
-				for (String sql : new Xml2Data(context, xml).getCreateSql()) {
+				for (String sql : new Xml2Data().getCreateSql()) {
 					db.execSQL(sql);
 				}
 			} catch (SQLException e) {
@@ -93,13 +85,13 @@ public class DataBase extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		// 表结构更新
 		try {
-			databaseTableVersion data=new databaseTableVersion();
-			for (String sql : new Xml2Data(context, xml)
-					.getUpdateSql(data.getDatabaseVersion(db).getTableMap())) {
+			databaseTableVersion data = new databaseTableVersion();
+			for (String sql : new Xml2Data().getUpdateSql(data
+					.getDatabaseVersion(db).getTableMap())) {
 				db.execSQL(sql);
 			}
 			data.setOnUpdate(db);
-			
+
 		} catch (InstantiationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -161,7 +153,7 @@ public class DataBase extends SQLiteOpenHelper {
 				throws ClassNotFoundException, XmlPullParserException,
 				IllegalArgumentException, IllegalAccessException, IOException {
 			// 表更新时使用的hashmap
-			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap(xml);
+			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap();
 			DatabaseVersion databaseVersion = new DatabaseVersion();
 			databaseVersion.setTableMap(tableMap);
 			db.execSQL("create table system_sqliteCtrl_databaseVersion(version integer,tableMap BLOB)");
@@ -170,9 +162,9 @@ public class DataBase extends SQLiteOpenHelper {
 					getObjectContentValues(true, databaseVersion).values);
 		}
 
-
 		/**
 		 * 更新表結構用
+		 * 
 		 * @param db
 		 * @throws ClassNotFoundException
 		 * @throws XmlPullParserException
@@ -185,7 +177,7 @@ public class DataBase extends SQLiteOpenHelper {
 				IllegalArgumentException, IllegalAccessException, IOException {
 			// 保存新版本
 			// 表更新时使用的hashmap
-			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap(xml);
+			HashMap<String, HashMap<String, TableValue>> tableMap = getTableMap();
 			DatabaseVersion databaseVersion = new DatabaseVersion();
 			databaseVersion.setTableMap(tableMap);
 			db.insert("system_sqliteCtrl_databaseVersion", null,

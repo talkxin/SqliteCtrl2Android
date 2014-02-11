@@ -34,7 +34,7 @@ public @interface Property {
 	 * 
 	 * @return
 	 */
-	int length() default 0;
+	int length() default 255;
 
 	/**
 	 * 是否自增长 默认为false
@@ -42,7 +42,7 @@ public @interface Property {
 	 * @return
 	 */
 	@Deprecated
-	boolean isPlus() default false;
+	boolean isPlus() default true;
 
 	/**
 	 * 是否为空 默认为false
@@ -57,11 +57,11 @@ public @interface Property {
 	 * @return
 	 */
 	String defaultString() default "";
-//
-//	/**
-//	 * 用来支持BOLB类型字段对象是否反序列化属性
-//	 * 
-//	 * @return
-//	 */
-//	boolean serialization() default true;
+	//
+	// /**
+	// * 用来支持BOLB类型字段对象是否反序列化属性
+	// *
+	// * @return
+	// */
+	// boolean serialization() default true;
 }

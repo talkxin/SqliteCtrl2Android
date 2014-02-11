@@ -1,12 +1,6 @@
 package org.sqlite;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -14,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.sqlite.annotation.Property;
-import org.sqlite.annotation.Table;
 import org.sqlite.module.TableType;
 import org.sqlite.util.DataBase;
 import org.sqlite.util.DatabaseUtil;
@@ -24,10 +17,8 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.res.XmlResourceParser;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Xml;
 
 /**
  * 数据库增删查改操作类
@@ -51,36 +42,11 @@ public class DatabaseCtrl extends DatabaseUtil {
 	private HashMap<String, String> ClassForTabelName = new HashMap<String, String>();
 
 	/**
-	 * 创建xml对象
-	 */
-	private static XmlPullParser dataParser = Xml.newPullParser();
-
-	/**
 	 * 数据库链接
 	 */
 	private DataBase dbBase;
 
 	public static int VERSION = 1;
-
-	static void init() throws ClassNotFoundException, XmlPullParserException {
-		// TODO Auto-generated method stub
-		Class.forName("dalvik.system.VMRuntime");
-		dataParser
-				.setInput(DatabaseCtrl.class
-						.getResourceAsStream("/res/xml/database.xml"), "utf-8");
-	}
-
-	static {
-		try {
-			init();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (XmlPullParserException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * 构造方法，传入context获取默认数据库
@@ -97,7 +63,7 @@ public class DatabaseCtrl extends DatabaseUtil {
 		// 初始化表类对应
 		onCreateTable();
 		// 连接数据库数据库
-		dbBase = new DataBase(context, dataParser, true, VERSION);
+		dbBase = new DataBase(context, true, VERSION);
 		// // 初始化连接
 		// sDatabase = dbBase.getWritableDatabase();
 	}
@@ -162,9 +128,8 @@ public class DatabaseCtrl extends DatabaseUtil {
 		// 初始化表类对应
 		onCreateTable();
 		// 连接数据库数据库
-		dbBase = new DataBase(context,
-				new Xml2Data(context, dataParser).getDatabaseName(), version,
-				true);
+		dbBase = new DataBase(context, new Xml2Data().getDatabaseName(),
+				version, true);
 		// // 初始化连接
 		// sDatabase = dbBase.getWritableDatabase();
 	}
@@ -364,8 +329,9 @@ public class DatabaseCtrl extends DatabaseUtil {
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName());
 		Cursor cursor = sDatabase.rawQuery(sqlString, null);
+		List<T> data = outObjectList(cursor, cla);
 		sDatabase.close();
-		return outObjectList(cursor, cla);
+		return data;
 	}
 
 	/**
@@ -394,9 +360,10 @@ public class DatabaseCtrl extends DatabaseUtil {
 		String sqlString = "select * from "
 				+ ClassForTabelName.get(cla.getName()) + " where 1=1 " + where
 				+ " limit " + start + "," + pageNum;
-		Cursor cursor = sDatabase.rawQuery(sqlString, selectionArgs);
+		List<T> data = outObjectList(
+				sDatabase.rawQuery(sqlString, selectionArgs), cla);
 		sDatabase.close();
-		return outObjectList(cursor, cla);
+		return data;
 	}
 
 	/**
@@ -413,9 +380,10 @@ public class DatabaseCtrl extends DatabaseUtil {
 		String sqlString = "select count(*) as count from " + table;
 		Cursor cursor = sDatabase.rawQuery(sqlString, null);
 		cursor.moveToFirst();
+		Integer count = Integer.parseInt(cursor.getString(cursor
+				.getColumnIndex("count")));
 		sDatabase.close();
-		return Integer
-				.parseInt(cursor.getString(cursor.getColumnIndex("count")));
+		return count;
 	}
 
 	/**
@@ -475,30 +443,33 @@ public class DatabaseCtrl extends DatabaseUtil {
 			for (Field field : allFields) {
 				// 返回属性注解
 				Property property = field.getAnnotation(Property.class);
-				Constructor con = field.getType().getConstructor(String.class);
+				// Constructor con =
+				// field.getType().getConstructor(field.getType());
 				field.setAccessible(true);
 				Object input = null;
 				// 若列名为属性名的则直接转换
-				int tableName = cursor.getColumnIndex(property.name()
+				int propertyName = cursor.getColumnIndex(property.name()
 						.equals("") ? field.getName() : property.name());
-				// if (property.name().equals("")) {
-				// input = cursor.getString(cursor.getColumnIndex(field
-				// .getName()));
-				// } else {
-				// // 若列名不是属性名的，获取注解中的列名获取值
-				// input = cursor.getString(cursor.getColumnIndex(property
-				// .name()));
-				// }
 				// 判断类型
 				switch (property.type()) {
 				case BIGINT:
 				case INT:
 				case TINYINT:
+				case INTEGER:
 				case SMALLINT:
 				case MEDIUMINT:
 				case UNSIGNED_BIG_INT:
 				case INT2:
 				case INT8:
+					input = cursor.getInt(propertyName);
+					break;
+				case DOUBLE:
+				case DOUBLE_PRECISION:
+					input = cursor.getDouble(propertyName);
+					break;
+				case FLOAT:
+					input = cursor.getFloat(propertyName);
+					break;
 				case CHARACTER:
 				case VARCHAR:
 				case VARYING_CHARACTER:
@@ -506,18 +477,15 @@ public class DatabaseCtrl extends DatabaseUtil {
 				case NATIVE_CHARACTER:
 				case NVARCHAR:
 				case TEXT:
-				case DOUBLE:
-				case DOUBLE_PRECISION:
-				case FLOAT:
 				case NUMERIC:
 				case BOOLEAN:
 				case DECIMAL:
-					input = cursor.getString(tableName);
+					input = cursor.getString(propertyName);
 					break;
 				case CLOB:
 				case BLOB:
 					// unSerialize
-					input = unserialize(cursor.getBlob(tableName));
+					input = unserialize(cursor.getBlob(propertyName));
 					break;
 				case REAL:
 					break;
@@ -529,7 +497,7 @@ public class DatabaseCtrl extends DatabaseUtil {
 					break;
 				}
 				if (input != null) {
-					field.set(object, con.newInstance(input));
+					field.set(object, input);
 				}
 			}
 			objList.add((T) object);
@@ -546,13 +514,14 @@ public class DatabaseCtrl extends DatabaseUtil {
 	 */
 	protected void onCreateTable() throws IOException, XmlPullParserException,
 			ClassNotFoundException {
+		XmlPullParser dataParser = getXMLPull();
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
 			// 判断标签的起始位置
 			if (dataParser.getEventType() == XmlPullParser.START_TAG) {
 				if ("head".equals(dataParser.getName())) {
-					VERSION = Integer.parseInt(dataParser.getAttributeValue(
-							null, "version"));
-					break;
+					String v = dataParser.getAttributeValue(null, "version");
+					if (v != null && !v.equals(""))
+						VERSION = Integer.parseInt(v);
 				}
 				// 判断如果标签为table的话
 				if ("table".equals(dataParser.getName())) {

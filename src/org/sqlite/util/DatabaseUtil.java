@@ -20,6 +20,7 @@ import org.sqlite.module.TableType;
 import org.sqlite.module.TableValue;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -63,9 +64,24 @@ public class DatabaseUtil {
 			Object value = field.get(object);
 			// 返回属性注解
 			Property property = field.getAnnotation(Property.class);
-			if (!property.isPlus()) {
+//			if (!property.isPlus()) {
 				// 判断类型
 				switch (property.type()) {
+				case INTEGER:
+					String propertyName=property.name().equals("")?field.getName():property.name();
+					if(!propertyName.equals(tableType.tableKey)){
+						String vString = "";
+						if (i) {
+							// 判断是否使用默认值
+							// 若默認使用默認值則判斷該值是否為空
+							vString = String.valueOf(value);
+							vString = vString.equals("") ? property.defaultString()
+									: vString;
+						}
+						values.put(property.name().equals("") ? field.getName()
+								: property.name(), vString);
+					}
+					break;
 				case BIGINT:
 				case INT:
 				case TINYINT:
@@ -112,12 +128,12 @@ public class DatabaseUtil {
 					break;
 				case DATETIME:
 					break;
-				default:
-					values.put(property.name().equals("") ? field.getName()
-							: property.name(), String.valueOf(value));
-					break;
+//				default:
+//					values.put(property.name().equals("") ? field.getName()
+//							: property.name(), String.valueOf(value));
+//					break;
 				}
-			}
+//			}
 		}
 		tableType.values = values;
 		return tableType;
@@ -165,10 +181,11 @@ public class DatabaseUtil {
 	 * @return
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
+	 * @throws IOException
 	 */
-	protected HashMap<String, HashMap<String, TableValue>> getTableMap(
-			XmlPullParser dataParser) throws XmlPullParserException,
-			ClassNotFoundException {
+	protected HashMap<String, HashMap<String, TableValue>> getTableMap() throws XmlPullParserException,
+			ClassNotFoundException, IOException {
+		XmlPullParser dataParser=getXMLPull();
 		// 表更新时使用的hashmap
 		HashMap<String, HashMap<String, TableValue>> tableMap = new HashMap<String, HashMap<String, TableValue>>();
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
@@ -188,6 +205,7 @@ public class DatabaseUtil {
 							(HashMap<String, TableValue>) tableObjects[1]);
 				}
 			}
+			dataParser.next();
 		}
 		return tableMap;
 	}
@@ -213,7 +231,7 @@ public class DatabaseUtil {
 			tableValue.name = property.name().equals("") ? field.getName()
 					: property.name();
 			tableValue.notNull = property.notNull();
-			if (property.type() == null) {
+			if (property.type().equals("")) {
 				if (field.getType().toString()
 						.equals("class java.lang.Integer")) {
 					tableValue.type = SQLType.INT;
@@ -281,5 +299,19 @@ public class DatabaseUtil {
 		DatabaseVersion dv = (DatabaseVersion) DatabaseCtrl.outObjectList(
 				cursor, DatabaseVersion.class).get(0);
 		return dv;
+	}
+
+	/**
+	 *  返回一个xml对象
+	 * @return
+	 * @throws XmlPullParserException
+	 * @throws ClassNotFoundException 
+	 */
+	public static XmlPullParser getXMLPull() throws XmlPullParserException, ClassNotFoundException {
+		Class.forName("dalvik.system.VMRuntime");
+		XmlPullParser xml = XmlPullParserFactory.newInstance().newPullParser();
+		xml.setInput(DatabaseUtil.class
+				.getResourceAsStream("/assets/database.xml"), "UTF-8");
+		return xml;
 	}
 }

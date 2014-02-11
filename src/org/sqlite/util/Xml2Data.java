@@ -19,7 +19,7 @@ import android.content.Context;
  * @author talkliu
  * 
  */
-public class Xml2Data extends DatabaseUtil{
+public class Xml2Data extends DatabaseUtil {
 	/**
 	 * activity的Context
 	 */
@@ -28,14 +28,11 @@ public class Xml2Data extends DatabaseUtil{
 	 * xml的字符串
 	 */
 	private String xmlStr;
+
 	/**
 	 * 配置文件中的xml对象
 	 */
 	// private Integer r2xml;
-	/**
-	 * xml解析对象
-	 */
-	private XmlPullParser dataParser;
 
 	//
 	// /**
@@ -51,9 +48,7 @@ public class Xml2Data extends DatabaseUtil{
 	 * @param xml
 	 *            R文件下配置文件的资源列表
 	 */
-	public Xml2Data(Context context, XmlPullParser dataParser) {
-		this.actContext = context;
-		this.dataParser = dataParser;
+	public Xml2Data() {
 	}
 
 	/**
@@ -62,17 +57,22 @@ public class Xml2Data extends DatabaseUtil{
 	 * @return
 	 * @throws IOException
 	 * @throws XmlPullParserException
+	 * @throws ClassNotFoundException
 	 */
-	public String getDatabaseName() throws XmlPullParserException, IOException {
+	public String getDatabaseName() throws XmlPullParserException, IOException,
+			ClassNotFoundException {
 		String databaseName = "";
+		XmlPullParser dataParser = getXMLPull();
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
-			if ("head".equals(dataParser.getName())) {
-				databaseName = dataParser.getAttributeValue(null, "name");
-				break;
+			// 判断标签的起始位置
+			if (dataParser.getEventType() == XmlPullParser.START_TAG) {
+				if ("head".equals(dataParser.getName())) {
+					databaseName = dataParser.getAttributeValue(null, "name");
+					break;
+				}
 			}
 			dataParser.next();
 		}
-		// dataParser.close();
 		return databaseName;
 	}
 
@@ -86,6 +86,7 @@ public class Xml2Data extends DatabaseUtil{
 	 */
 	protected List<String> getCreateSql() throws IOException,
 			XmlPullParserException, ClassNotFoundException {
+		XmlPullParser dataParser = getXMLPull();
 		// 表的集合
 		List<String> list = new ArrayList<String>();
 		// 组建创建表的StringBuffer对象
@@ -113,8 +114,9 @@ public class Xml2Data extends DatabaseUtil{
 	 * @throws ClassNotFoundException
 	 */
 	protected List<String> getUpdateSql(
-			HashMap<String, HashMap<String, TableValue>> map) throws ClassNotFoundException,
-			XmlPullParserException, IOException {
+			HashMap<String, HashMap<String, TableValue>> map)
+			throws ClassNotFoundException, XmlPullParserException, IOException {
+		XmlPullParser dataParser = getXMLPull();
 		// 表的集合
 		List<String> list = new ArrayList<String>();
 		// 组建创建表的StringBuffer对象
@@ -127,10 +129,10 @@ public class Xml2Data extends DatabaseUtil{
 					// 获得表名
 					String tableName = dataParser.getAttributeValue(null,
 							"name");
-					//获取表的老字段值
+					// 获取表的老字段值
 					HashMap<String, TableValue> oldProperty;
 					// 判断是否有该表，若没有该表则直接添加新表
-					if ((oldProperty=map.get(tableName)) == null) {
+					if ((oldProperty = map.get(tableName)) == null) {
 						list.add(create_table(dataParser));
 					} else {
 						// 获得Class
@@ -139,24 +141,24 @@ public class Xml2Data extends DatabaseUtil{
 						// 獲取的表屬性及其表對比值
 						Object[] newTables = getTablePorperty(className);
 						HashMap<String, TableValue> newProperty = (HashMap<String, TableValue>) newTables[1];
-						Iterator ite=newProperty.entrySet().iterator();
-						//检查修改与新增
-						while(ite.hasNext()){
+						Iterator ite = newProperty.entrySet().iterator();
+						// 检查修改与新增
+						while (ite.hasNext()) {
 							Entry entry = (Entry) ite.next();
 							StringBuffer alter;
 							TableValue ol;
-							String name=(String) entry.getKey();
-							TableValue ne=(TableValue) entry.getValue();
-							if((ol=oldProperty.get(name))==null){
-								alter=new StringBuffer();
-								String length="";
-								if(ne.length!=0){
-									length="(" + ne.length + ") ";
+							String name = (String) entry.getKey();
+							TableValue ne = (TableValue) entry.getValue();
+							if ((ol = oldProperty.get(name)) == null) {
+								alter = new StringBuffer();
+								String length = "";
+								if (ne.length != 0) {
+									length = "(" + ne.length + ") ";
 								}
-								alter.append("ALTER TABLE "+tableName+" ADD ");
-								alter.append(ne.type+length);
-								//填入老字段中
-								oldProperty.put(name, ne);
+								alter.append("ALTER TABLE " + tableName
+										+ " ADD "+ne.name+" ");
+								alter.append(ne.type + length);
+								// 填入老字段中
 								list.add(alter.toString());
 							}
 						}
@@ -165,22 +167,23 @@ public class Xml2Data extends DatabaseUtil{
 			}
 			dataParser.next();
 		}
-		return null;
+		return list;
 	}
-	
+
 	/**
 	 * 返回生成表結構
+	 * 
 	 * @return
-	 * @throws ClassNotFoundException 
+	 * @throws ClassNotFoundException
 	 */
-	private String create_table(XmlPullParser dataParser) throws ClassNotFoundException{
+	private String create_table(XmlPullParser dataParser)
+			throws ClassNotFoundException {
 		StringBuffer createSql = new StringBuffer();
 		// 获得表名
-		String tableName = dataParser.getAttributeValue(null,
-				"name");
+		String tableName = dataParser.getAttributeValue(null, "name");
 		// 获得Class
-		Class className = Class.forName(dataParser
-				.getAttributeValue(null, "ref"));
+		Class className = Class.forName(dataParser.getAttributeValue(null,
+				"ref"));
 		// 将表名与类名放入map
 		// ClassForTabelName.put(className.getName(), tableName);
 		createSql.append("create table ");
@@ -193,16 +196,45 @@ public class Xml2Data extends DatabaseUtil{
 		String key = getTableKye(className);
 		for (TableValue t : tableProerty) {
 			createSql.append(t.name + " ");
-			if (t.isPlus) {
-				// 如果为自增长则固定为Integer类型
-				createSql.append("integer ");
-			} else {
-				String length=" ";
-				if(t.length!=0){
-					length="(" + t.length + ") ";
-				}
-				createSql.append(t.type+length);
+			// if (t.isPlus) {
+			// // 如果为自增长则固定为Integer类型
+			// createSql.append("integer ");
+			// } else {
+			String length = " ";
+			switch (t.type) {
+			case BIGINT:
+			case INT:
+			case INTEGER:
+			case TINYINT:
+			case SMALLINT:
+			case MEDIUMINT:
+			case UNSIGNED_BIG_INT:
+			case INT2:
+			case INT8:
+			case TEXT:
+			case DOUBLE:
+			case DOUBLE_PRECISION:
+			case FLOAT:
+			case NUMERIC:
+			case BOOLEAN:
+			case CLOB:
+			case BLOB:
+			case REAL:
+			case DATE:
+			case DATETIME:
+				break;
+			case NVARCHAR:
+			case DECIMAL:
+			case CHARACTER:
+			case VARCHAR:
+			case VARYING_CHARACTER:
+			case NCHAR:
+			case NATIVE_CHARACTER:
+				length = "(" + t.length + ") ";
+				break;
 			}
+			createSql.append(t.type + length);
+			// }
 			if (!key.equals("") && t.name.equals(key)) {
 				// 如果为主键则加上主键约束
 				createSql.append("primary key ");
@@ -215,8 +247,7 @@ public class Xml2Data extends DatabaseUtil{
 			createSql.append(",");
 		}
 		// 移除最后一个逗号
-		createSql.replace(createSql.length() - 1,
-				createSql.length(), "");
+		createSql.replace(createSql.length() - 1, createSql.length(), "");
 		// 一张表建立完成
 		createSql.append(")");
 		return createSql.toString();
