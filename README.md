@@ -4,14 +4,15 @@ SqliteCtrl2Android
 android的sqlite控制包的源代码，提供对xml生成新表新库，通过注解类对象进行对数据库的操作
 
 一、xml文件的创建
-  1、在res文件夹下创建xml文件夹
-  2、创建database.xml文件
+  1、创建assets资源文件夹
+  2、在assets下创建database.xml文件
    
 二、xml文件的内容
   1、根标签
   <database>
   2、head标签（数据库标签，在oncreate时会自动创建该数据库，在当前版本下只支持一个数据库的创建）
     name属性为数据库名称
+    version 属性为默认数据库版本，int值，递增关系，需要进行更新数据库时需要递增该值
     
 
   3、table标签，对应表名与注解的ORM类，在oncreate时会根据类注解生成表的列
@@ -48,13 +49,6 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
 	int length();
 
 	/**
-	 * 是否自增长，可以指定任意列为自增长列 默认为false
-	 * 
-	 * @return
-	 */
-	boolean isPlus() default false;
-
-	/**
 	 * 是否为空 默认为false
 	 * 
 	 * @return
@@ -75,41 +69,13 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
   	/**
 	 * 构造方法，传入context获取默认数据库
 	 * 
-	 * @param context
 	 * @param database
 	 * @throws IOException
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
 	 */
-	public DatabaseCtrl(Context context, Integer database)
+	public DatabaseCtrl(Context context)
 			throws XmlPullParserException, IOException, ClassNotFoundException
-
-	/**
-	 * 构造方法，连接不同的数据库
-	 * 
-	 * @param context
-	 * @param database
-	 * @param databaseName
-	 * @throws ClassNotFoundException
-	 * @throws XmlPullParserException
-	 * @throws IOException
-	 */
-	public DatabaseCtrl(Context context, Integer database, String databaseName)
-			throws IOException, XmlPullParserException, ClassNotFoundException
-
-	/**
-	 * 构造方法，连接不同数据库的不同版本
-	 * 
-	 * @param context
-	 * @param database
-	 * @param databaseName
-	 * @param version
-	 * @throws ClassNotFoundException
-	 * @throws XmlPullParserException
-	 * @throws IOException
-	 */
-	public DatabaseCtrl(Context context, Integer database, String databaseName,
-			int version)
 
 	/**
 	 * 构造方法返回默认数据库的不同版本
@@ -120,7 +86,7 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
 	 * @throws XmlPullParserException
 	 * @throws ClassNotFoundException
 	 */
-	public DatabaseCtrl(Context context, Integer database, int version)
+	public DatabaseCtrl(Context context, int version)
 			throws XmlPullParserException, IOException, ClassNotFoundException
 			
 	/**
@@ -216,3 +182,13 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
 	 */
 	public <T> T query2Where(Class cla, String sql, String... selectionArgs)
 	
+
+
+
+=======================================================================
+1.3更新内容：
+	1、增加了枚举，规范了数据库表类型
+	2、增加支持了对二进制数据的存储
+	3、增加支持了对对象的存储序列化与反序列化
+	4、增加了动态更新数据库功能
+=======================================================================
