@@ -1,6 +1,11 @@
 SqliteCtrl2Android
 ==================
 
+===================
+	下载地址：http://yunpan.cn/QpEedGB6qmJit
+===================
+
+
 android的sqlite控制包的源代码，提供对xml生成新表新库，通过注解类对象进行对数据库的操作
 
 	一、xml文件的创建
