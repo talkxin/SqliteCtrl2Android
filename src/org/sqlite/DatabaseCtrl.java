@@ -60,7 +60,7 @@ public class DatabaseCtrl extends DatabaseUtil {
 	 */
 	private DataBase dbBase;
 
-	public static int VERSION;
+	public static int VERSION = 1;
 
 	static void init() throws ClassNotFoundException, XmlPullParserException {
 		// TODO Auto-generated method stub
