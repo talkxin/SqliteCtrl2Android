@@ -1,6 +1,11 @@
 SqliteCtrl2Android
 ==================
 
+===================
+	下载地址：http://yunpan.cn/QpEedGB6qmJit
+===================
+
+
 android的sqlite控制包的源代码，提供对xml生成新表新库，通过注解类对象进行对数据库的操作
 
 	一、xml文件的创建
@@ -62,20 +67,20 @@ android的sqlite控制包的源代码，提供对xml生成新表新库，通过�
 	 */
 	String defaultString() default "";
 	
-四、使用及方法
-  1、创建
-    在任意activity中通过new DatabaseCtrl来获取数据库对象
-  2、方法
-  	/**
-	 * 构造方法，传入context获取默认数据库
-	 * 
-	 * @param database
-	 * @throws IOException
-	 * @throws XmlPullParserException
-	 * @throws ClassNotFoundException
-	 */
-	public DatabaseCtrl(Context context)
-			throws XmlPullParserException, IOException, ClassNotFoundException
+	四、使用及方法
+ 		 1、创建
+		    在任意activity中通过new DatabaseCtrl来获取数据库对象
+ 			 2、方法
+	  	/**
+		 * 构造方法，传入context获取默认数据库
+		 * 
+		 * @param database
+		 * @throws IOException
+		 * @throws XmlPullParserException
+		 * @throws ClassNotFoundException
+		 */
+		public DatabaseCtrl(Context context)
+				throws XmlPullParserException, IOException, ClassNotFoundException
 
 	/**
 	 * 构造方法返回默认数据库的不同版本
