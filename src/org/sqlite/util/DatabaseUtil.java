@@ -118,9 +118,16 @@ public class DatabaseUtil {
 				case BLOB:
 					// 若保存字节流则需要对对象进行序列化
 					// 序列化对象不允许有默认值
+					//判断该对象是否为byte[]数组，若为byte[]则不仅行序列化
+					if(field.getType()==byte[].class){
+						values.put(property.name().equals("") ? field.getName()
+								: property.name(), value == null ? null
+								: (byte[])value);
+					}else{
 					values.put(property.name().equals("") ? field.getName()
 							: property.name(), value == null ? null
 							: serialize(value));
+					}
 					break;
 				case REAL:
 					break;

@@ -485,7 +485,12 @@ public class DatabaseCtrl extends DatabaseUtil {
 				case CLOB:
 				case BLOB:
 					// unSerialize
-					input = unserialize(cursor.getBlob(propertyName));
+					//如果属性类型为byte[]则不进行反序列化操作
+					if(field.getType()==byte[].class){
+						input = cursor.getBlob(propertyName);
+					}else{
+						input = unserialize(cursor.getBlob(propertyName));
+					}
 					break;
 				case REAL:
 					break;
