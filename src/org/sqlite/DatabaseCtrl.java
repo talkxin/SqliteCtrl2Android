@@ -493,12 +493,10 @@ public class DatabaseCtrl extends DatabaseUtil {
 					}
 					break;
 				case REAL:
-					break;
 				case DATE:
-					break;
 				case DATETIME:
-					break;
 				default:
+					input = cursor.getString(propertyName);
 					break;
 				}
 				if (input != null) {

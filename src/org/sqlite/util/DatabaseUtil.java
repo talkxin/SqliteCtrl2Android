@@ -130,15 +130,12 @@ public class DatabaseUtil {
 					}
 					break;
 				case REAL:
-					break;
 				case DATE:
-					break;
 				case DATETIME:
+				default:
+					values.put(property.name().equals("") ? field.getName()
+							: property.name(), String.valueOf(value));
 					break;
-//				default:
-//					values.put(property.name().equals("") ? field.getName()
-//							: property.name(), String.valueOf(value));
-//					break;
 				}
 //			}
 		}
