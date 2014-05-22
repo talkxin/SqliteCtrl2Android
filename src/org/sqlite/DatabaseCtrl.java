@@ -448,9 +448,9 @@ public class DatabaseCtrl extends DatabaseUtil {
 				field.setAccessible(true);
 				Object input = null;
 				// 若列名为属性名的则直接转换
-				int propertyName = cursor.getColumnIndex(property.name()
-						.equals("") ? field.getName() : property.name());
 				try {
+					int propertyName = cursor.getColumnIndex(property.name()
+							.equals("") ? field.getName() : property.name());
 					// 判断类型
 					switch (property.type()) {
 					case BIGINT:
