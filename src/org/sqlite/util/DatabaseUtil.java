@@ -64,19 +64,21 @@ public class DatabaseUtil {
 			Object value = field.get(object);
 			// 返回属性注解
 			Property property = field.getAnnotation(Property.class);
-//			if (!property.isPlus()) {
-				// 判断类型
+			// if (!property.isPlus()) {
+			// 判断类型
+			try {
 				switch (property.type()) {
 				case INTEGER:
-					String propertyName=property.name().equals("")?field.getName():property.name();
-					if(!propertyName.equals(tableType.tableKey)){
+					String propertyName = property.name().equals("") ? field
+							.getName() : property.name();
+					if (!propertyName.equals(tableType.tableKey)) {
 						String vString = "";
 						if (i) {
 							// 判断是否使用默认值
 							// 若默認使用默認值則判斷該值是否為空
 							vString = String.valueOf(value);
-							vString = vString.equals("") ? property.defaultString()
-									: vString;
+							vString = vString.equals("") ? property
+									.defaultString() : vString;
 						}
 						values.put(property.name().equals("") ? field.getName()
 								: property.name(), vString);
@@ -118,15 +120,15 @@ public class DatabaseUtil {
 				case BLOB:
 					// 若保存字节流则需要对对象进行序列化
 					// 序列化对象不允许有默认值
-					//判断该对象是否为byte[]数组，若为byte[]则不仅行序列化
-					if(field.getType()==byte[].class){
+					// 判断该对象是否为byte[]数组，若为byte[]则不仅行序列化
+					if (field.getType() == byte[].class) {
 						values.put(property.name().equals("") ? field.getName()
 								: property.name(), value == null ? null
-								: (byte[])value);
-					}else{
-					values.put(property.name().equals("") ? field.getName()
-							: property.name(), value == null ? null
-							: serialize(value));
+								: (byte[]) value);
+					} else {
+						values.put(property.name().equals("") ? field.getName()
+								: property.name(), value == null ? null
+								: serialize(value));
 					}
 					break;
 				case REAL:
@@ -137,7 +139,11 @@ public class DatabaseUtil {
 							: property.name(), String.valueOf(value));
 					break;
 				}
-//			}
+			} catch (NullPointerException e) {
+				// TODO: handle exception
+				continue;
+			}
+			// }
 		}
 		tableType.values = values;
 		return tableType;
@@ -187,9 +193,9 @@ public class DatabaseUtil {
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	protected HashMap<String, HashMap<String, TableValue>> getTableMap() throws XmlPullParserException,
-			ClassNotFoundException, IOException {
-		XmlPullParser dataParser=getXMLPull();
+	protected HashMap<String, HashMap<String, TableValue>> getTableMap()
+			throws XmlPullParserException, ClassNotFoundException, IOException {
+		XmlPullParser dataParser = getXMLPull();
 		// 表更新时使用的hashmap
 		HashMap<String, HashMap<String, TableValue>> tableMap = new HashMap<String, HashMap<String, TableValue>>();
 		while (dataParser.getEventType() != XmlPullParser.END_DOCUMENT) {
@@ -230,11 +236,15 @@ public class DatabaseUtil {
 		for (Field field : allFields) {
 			Property property = field.getAnnotation(Property.class);
 			TableValue tableValue = new TableValue();
-			tableValue.isPlus = property.isPlus();
-			tableValue.length = property.length();
-			tableValue.name = property.name().equals("") ? field.getName()
-					: property.name();
-			tableValue.notNull = property.notNull();
+			try {
+				tableValue.isPlus = property.isPlus();
+				tableValue.length = property.length();
+				tableValue.name = property.name().equals("") ? field.getName()
+						: property.name();
+				tableValue.notNull = property.notNull();
+			} catch (Exception e) {
+				continue;
+			}
 			if (property.type().equals("")) {
 				if (field.getType().toString()
 						.equals("class java.lang.Integer")) {
@@ -306,16 +316,19 @@ public class DatabaseUtil {
 	}
 
 	/**
-	 *  返回一个xml对象
+	 * 返回一个xml对象
+	 * 
 	 * @return
 	 * @throws XmlPullParserException
-	 * @throws ClassNotFoundException 
+	 * @throws ClassNotFoundException
 	 */
-	public static XmlPullParser getXMLPull() throws XmlPullParserException, ClassNotFoundException {
+	public static XmlPullParser getXMLPull() throws XmlPullParserException,
+			ClassNotFoundException {
 		Class.forName("dalvik.system.VMRuntime");
 		XmlPullParser xml = XmlPullParserFactory.newInstance().newPullParser();
-		xml.setInput(DatabaseUtil.class
-				.getResourceAsStream("/assets/database.xml"), "UTF-8");
+		xml.setInput(
+				DatabaseUtil.class.getResourceAsStream("/assets/database.xml"),
+				"UTF-8");
 		return xml;
 	}
 }

@@ -450,54 +450,58 @@ public class DatabaseCtrl extends DatabaseUtil {
 				// 若列名为属性名的则直接转换
 				int propertyName = cursor.getColumnIndex(property.name()
 						.equals("") ? field.getName() : property.name());
-				// 判断类型
-				switch (property.type()) {
-				case BIGINT:
-				case INT:
-				case TINYINT:
-				case INTEGER:
-				case SMALLINT:
-				case MEDIUMINT:
-				case UNSIGNED_BIG_INT:
-				case INT2:
-				case INT8:
-					input = cursor.getInt(propertyName);
-					break;
-				case DOUBLE:
-				case DOUBLE_PRECISION:
-					input = cursor.getDouble(propertyName);
-					break;
-				case FLOAT:
-					input = cursor.getFloat(propertyName);
-					break;
-				case CHARACTER:
-				case VARCHAR:
-				case VARYING_CHARACTER:
-				case NCHAR:
-				case NATIVE_CHARACTER:
-				case NVARCHAR:
-				case TEXT:
-				case NUMERIC:
-				case BOOLEAN:
-				case DECIMAL:
-					input = cursor.getString(propertyName);
-					break;
-				case CLOB:
-				case BLOB:
-					// unSerialize
-					//如果属性类型为byte[]则不进行反序列化操作
-					if(field.getType()==byte[].class){
-						input = cursor.getBlob(propertyName);
-					}else{
-						input = unserialize(cursor.getBlob(propertyName));
+				try {
+					// 判断类型
+					switch (property.type()) {
+					case BIGINT:
+					case INT:
+					case TINYINT:
+					case INTEGER:
+					case SMALLINT:
+					case MEDIUMINT:
+					case UNSIGNED_BIG_INT:
+					case INT2:
+					case INT8:
+						input = cursor.getInt(propertyName);
+						break;
+					case DOUBLE:
+					case DOUBLE_PRECISION:
+						input = cursor.getDouble(propertyName);
+						break;
+					case FLOAT:
+						input = cursor.getFloat(propertyName);
+						break;
+					case CHARACTER:
+					case VARCHAR:
+					case VARYING_CHARACTER:
+					case NCHAR:
+					case NATIVE_CHARACTER:
+					case NVARCHAR:
+					case TEXT:
+					case NUMERIC:
+					case BOOLEAN:
+					case DECIMAL:
+						input = cursor.getString(propertyName);
+						break;
+					case CLOB:
+					case BLOB:
+						// unSerialize
+						// 如果属性类型为byte[]则不进行反序列化操作
+						if (field.getType() == byte[].class) {
+							input = cursor.getBlob(propertyName);
+						} else {
+							input = unserialize(cursor.getBlob(propertyName));
+						}
+						break;
+					case REAL:
+					case DATE:
+					case DATETIME:
+					default:
+						input = cursor.getString(propertyName);
+						break;
 					}
-					break;
-				case REAL:
-				case DATE:
-				case DATETIME:
-				default:
-					input = cursor.getString(propertyName);
-					break;
+				} catch (NullPointerException e) {
+					continue;
 				}
 				if (input != null) {
 					field.set(object, input);
